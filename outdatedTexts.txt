@@ -1,0 +1,198 @@
+# Workflow
+
+ 1. (Users) Each user generates an RSA key pair and sends the public key to your server
+    - The keys are used to digitally sign outgoing messages later on.
+
+ 2. (Backend) Create new users (chat participants) by requesting a token pair for each participant
+    - Make a POST request to */token* for each participant.
+    - TODO: This method will be improved to process an array of users in one go in the next revision.
+
+ 3. (Users) Create a chat room and add participants
+    - Make a PUT request to */chats/{chatID}/users* for each participant
+    This method can process an array of users in one go.
+
+ 4. (Users) Send a message(s) and/or delivery receipts
+    - Make a POST request to */messages* providing an *accessToken*
+
+ 5. (Users) Receive a message (messages or deliery receipts)
+    - Make a GET request to */messages* providing an *accessToken*
+
+ 6. (Users) Close the existing chat
+    - Make a DELETE request to */chats/{chatID}*
+
+If you want to add a participant to a chat at a later time, repeat steps 1-3 for each new participant.
+
+## Chats interface for backend [backend/chats/{chatID}]			
+
+### Delete a chat by chatID [DELETE]
+
+Deletes a chat by *chatID*. Removes all participants before deleting the chat.
+
+**Possible response status codes**
+
++ 200 - OK, deleted successfully
++ 400 - Invalid chatID
+
++ Response 200
+
++ Response 400
+
+    + Body
+
+            {
+                "error": "Invalid chatID"
+            }
+
+## Chat room management [backend/chats/{chatID}/users]
+
++ Parameters
+    + chatID (required, string) ... ID of the chat (chat room) to add a user to. Case-sensitive, *[a-zA-Z0-9]*, *"."* and *"-"* are allowed. (*Example: "chat-148523592"*)
+
+### Add a user to a chat [PUT]
+
+Adds a user to a chat (chat room). If the chat room does not exist, it will be created.
+
+users – The username array used by a third-party system (your platform). Case-sensitive, *[a-zA-Z0-9]*, *"."* and *"-"* are allowed (*Example: ["John.Doe-mobile1", "user2222"]*)
+chatName - The optional parameter (could be any string), describing the chat
+
+**Request body**
+
+**users** – The list of participants to add to the chat room specified by chatID
+**chatName** - The optional parameter (could be any string), describing the chat
+
+**Possible response status codes**
+
++ 200 - OK
++ 400 - Invalid parameters
++ 500 - Internal server error
+
++ Request (application/json)
+
+    + Body
+
+            {
+                "users": [
+					"John.Doe-mobile1",
+					"user2222"
+				],
+				"chatName": "This is the chat description"
+            }
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "GUIDList": [
+					"6c84ec90-11c5-10e5-840d-7c25e5ff775a",
+					"ab389ffe-0919-b7ad-184b-3116de8b90ac"
+				]
+            }
+
++ Response 400 (application/json)
+
+    + Body
+
+            {
+                "error": "Invalid parameters"
+            }
+
++ Response 500
+
+    + Body
+
+            {
+                "error": "Internal server error"
+            }
+
+### Get a list of users in a chat room [GET]
+
+Gets the list of users in the chat room identified by chatID
+
+**Possible response status codes**
+
++ 200 - OK
++ 400 - A wrong or missing chatID supplied
++ 500 - Internal server error
+
++ Response 200
+
+    + Body
+
+            {
+				"chat" :
+				{
+					"chatID" : "best-chat",
+					"chatName" : "Descriptive string",
+					"ownerGUID" : "8861c317-a6a8-4655-b49f-0561f83220ff",
+					"creationTime" : "127659304583",
+					"updateTime": "127659304585",
+					"users":
+					[
+						{
+							"GUID" : "8861c317-a6a8-4655-b49f-0561f83220ff",
+							"userID" : "user2222",
+							"displayName" : "User1 display name"	... optional
+						},
+						{
+							"GUID" : "f017e919-f759-451e-9365-c7dedccbdfef",
+							"userID" : "John.Doe-mobile1",
+							"displayName" : "User2 display name" ... optional
+						}
+					]
+				}
+			}
+
++ Response 400
+
+    + Body
+
+            {
+                "error": "Invalid chatID"
+            }
+
++ Response 500
+
+    + Body
+
+            {
+                "error": "Internal server error"
+            }
+
+### Delete users from chat [DELETE]
+
+Deletes a list of users from *chatID*. If ownerID is in the list, the complete chat is deleted
+
+**Possible response status codes**
+
++ 200 - OK, deleted successfully
++ 400 - Bad request
++ 404 - ChatID not found
++ 500 - Internal server error
+
++ Response 200
+
++ Response 400
+
+    + Body
+
+            {
+                "error": "Bad request"
+            }
+
++ Response 404
+
+    + Body
+
+            {
+                "error": "ChatID not found"
+            }
+
++ Response 500
+
+    + Body
+
+            {
+                "error": "Internal server error"
+            }
+
